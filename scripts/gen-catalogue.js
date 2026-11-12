@@ -3,7 +3,7 @@
  *
  *   lua-filters/index.json     ← the single source of truth
  *     → its own normalised form  (key order, fileName derived from path)
- *       → the catalogue tables in README.md
+ *       → the catalogue tables in docs/README_UPSTREAM.md
  *
  * So editing an entry's storeName/description/requires/category — or adding,
  * moving or deleting one — is enough: the README tables follow. What a table
@@ -56,7 +56,7 @@ const CATEGORIES = [
  */
 const READMES = [
   {
-    file: 'README.md',
+    file: 'docs/README_UPSTREAM.md',
     lang: null,
     columns: ['Filter', 'What it does', 'Needs'],
     headings: Object.fromEntries(CATEGORIES),

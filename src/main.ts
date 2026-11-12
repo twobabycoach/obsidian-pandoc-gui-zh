@@ -2,6 +2,8 @@ import { App, Menu, Plugin, PluginManifest, TFile, Notice, debounce } from 'obsi
 import { PandocGuiSettings, ExportSetting, DEFAULT_SETTINGS, DEFAULT_ENV, restoreTemplates, applyExportChoices } from './settings';
 import { ExportSettingTab, ExportDialog, ImportDialog, UserGuideModal, ChangelogModal } from './ui';
 import { exportNote } from './convert/export';
+import { conversionSetup } from './pandoc/first_run';
+import { unsupportedBy, writesTypstPdf } from './pandoc/engine';
 import { getPlatformValue, setPlatformValue, PlatformKey, clone } from './system/utils';
 import { mobilePath } from './system/platform';
 import { t } from './lang/helpers';
@@ -31,6 +33,17 @@ export default class PandocGuiPlugin extends Plugin {
 
     this.addSettingTab(new ExportSettingTab(this));
 
+    this.addRibbonIcon('file-output', t.CMD_EXPORT, () => {
+      const file = this.app.workspace.getActiveFile();
+      if (file?.extension === 'md') {
+        ExportDialog.show(this, file);
+      } else {
+        new Notice(t.NOTICE_NO_FILE);
+      }
+    });
+
+    this.addRibbonIcon('file-input', t.CMD_IMPORT, () => ImportDialog.show(this));
+
     this.addCommand({
       // Obsidian prefixes command ids with the plugin's own.
       id: 'export',
@@ -38,7 +51,7 @@ export default class PandocGuiPlugin extends Plugin {
       icon: 'document',
       callback: () => {
         const file = this.app.workspace.getActiveFile();
-        if (file) {
+        if (file?.extension === 'md') {
           ExportDialog.show(this, file);
         } else {
           new Notice(t.NOTICE_NO_FILE, 2000);
@@ -51,15 +64,24 @@ export default class PandocGuiPlugin extends Plugin {
       icon: 'document',
       callback: async () => {
         const file = this.app.workspace.getActiveFile();
-        if (file) {
+        if (file?.extension === 'md') {
           // This device's own folder, not merely some device's: a vault that has exported on the computer carries a
           // folder for it, and a phone reading the same settings has none of its own until it has exported once.
           const directory = getPlatformValue(this.settings.lastExportDirectory);
           if (this.settings.lastExportType && directory) {
             const setting = this.settings.items.find(s => s.name === this.settings.lastExportType);
             if (setting) {
-              await exportNote(this, file, directory, undefined, applyExportChoices(setting, this.settings.lastExportChoices));
-              return;
+              const { engine, ready } = await conversionSetup(this);
+              const options = applyExportChoices(setting, this.settings.lastExportChoices);
+              const quickPdf = options.type === 'pandoc' && options.quickPdf;
+              const pdfReady =
+                !writesTypstPdf(options) ||
+                (!quickPdf && engine === 'native') ||
+                ((await this.typst.isInstalled()) && (!quickPdf || (await this.typst.hasChineseFonts())));
+              if (ready && pdfReady && !unsupportedBy(options, engine)) {
+                await exportNote(this, file, directory, undefined, options);
+                return;
+              }
             }
           }
           ExportDialog.show(this, file);
@@ -93,7 +115,7 @@ export default class PandocGuiPlugin extends Plugin {
 
     this.registerEvent(
       this.app.workspace.on('file-menu', (menu: Menu, file) => {
-        if (file instanceof TFile) {
+        if (file instanceof TFile && file.extension === 'md') {
           menu
             .addItem(item => {
               item

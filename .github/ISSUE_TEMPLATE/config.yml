@@ -1,11 +1,8 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Question or help with setup
-    url: https://github.com/pan4ratte/obsidian-pandoc-gui/discussions
-    about: Ask how to set up a template, an export or the plugin itself.
-  - name: User guide
-    url: https://github.com/pan4ratte/obsidian-pandoc-gui/blob/main/docs/USER_GUIDE.md
-    about: Templates, variables, Word documents, lua filters and Pandoc WASM.
-  - name: Bug in Pandoc itself
+  - name: 中文使用指南
+    url: https://github.com/twobabycoach/obsidian-pandoc-gui-zh/blob/main/docs/USER_GUIDE_ZH.md
+    about: 查阅导入、导出、样式模板与转换组件的使用说明。
+  - name: Pandoc 转换程序的问题
     url: https://github.com/jgm/pandoc/issues
-    about: If the same command fails in a terminal too, the bug is in Pandoc rather than the plugin.
+    about: 在 Pandoc 项目报告转换程序本身的问题。

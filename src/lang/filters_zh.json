@@ -1,0 +1,147 @@
+{
+  "abstract-section": {
+    "storeName": "从正文提取摘要",
+    "description": "把笔记中名为 Abstract 的章节移到文档的摘要位置。"
+  },
+  "pandoc-ext:include-files": {
+    "storeName": "合并外部文件",
+    "description": "按列表把库外文件或 LaTeX、HTML、reStructuredText 文件插入正文。"
+  },
+  "include-code-files": {
+    "storeName": "引用代码文件",
+    "description": "从磁盘读取完整代码或指定行数，填入笔记中的代码块。"
+  },
+  "pandoc-ext:pagebreak": {
+    "storeName": "手动分页",
+    "description": "将笔记中单独一行的分页标记转换为 Word、PDF、网页等格式的分页。"
+  },
+  "not-in-format": {
+    "storeName": "按格式显示内容",
+    "description": "同一篇笔记可为纸质版和网页版保留不同段落。"
+  },
+  "pandoc-ext:list-table": {
+    "storeName": "把嵌套列表转成表格",
+    "description": "用列表编辑复杂单元格，导出时生成表格。"
+  },
+  "revealjs-codeblock": {
+    "storeName": "网页幻灯片的代码效果",
+    "description": "在 Reveal.js 幻灯片中高亮指定代码行，也可分步展示。"
+  },
+  "track-changes": {
+    "storeName": "处理 Word 修订记录",
+    "description": "读取 Word 时可接受、拒绝或保留修订标记。"
+  },
+  "scrlttr2": {
+    "storeName": "信件排版",
+    "description": "用 KOMA-Script 生成带收件人和落款的信件。原项目已停止维护。",
+    "requires": "需要带 KOMA-Script 的 LaTeX。"
+  },
+  "course:zotero": {
+    "storeName": "直接从 Zotero 读取引用",
+    "description": "根据 Better BibTeX 引用键，从运行中的 Zotero 读取条目并排版引文。",
+    "requires": "需要启动 Zotero 并启用 Better BibTeX。"
+  },
+  "doi2cite": {
+    "storeName": "根据 DOI 生成引用",
+    "description": "查询正文中引用的 DOI，生成对应参考文献条目。",
+    "requires": "导出时需要联网。"
+  },
+  "pandoc-ext:multibib": {
+    "storeName": "生成多组参考文献",
+    "description": "可把史料、研究文献或软件等分开列出，放到指定位置。"
+  },
+  "pandoc-ext:section-bibliographies": {
+    "storeName": "分章节列参考文献",
+    "description": "为每章或每节生成各自的参考文献表。"
+  },
+  "bibexport": {
+    "storeName": "另存已引用的条目",
+    "description": "把文档实际引用的条目另存为一份 .bib 文件。",
+    "requires": "需要 TeX Live 中的 bibexport。"
+  },
+  "pandoc-ext:cito": {
+    "storeName": "标注引用关系",
+    "description": "可标明引用是为了赞同、扩展还是借用研究方法，并按关系列出文献。"
+  },
+  "scholarly-metadata": {
+    "storeName": "整理作者与单位信息",
+    "description": "将笔记属性中的作者与单位调整成期刊模板需要的格式。"
+  },
+  "author-info-blocks": {
+    "storeName": "显示作者与单位",
+    "description": "在标题下方排出作者、单位与通讯地址。",
+    "requires": "请把「整理作者与单位信息」规则排在此规则之前。"
+  },
+  "pandoc-ext:diagram": {
+    "storeName": "把流程图代码转成图片",
+    "description": "将 Mermaid、Graphviz、PlantUML、TikZ 等图形放进导出的文档。",
+    "requires": "电脑须安装所用的绘图工具。"
+  },
+  "math2svg": {
+    "storeName": "将公式转为矢量图",
+    "description": "用 MathJax 生成 SVG 公式，导出后可离线查看。",
+    "requires": "需要 Node.js 和 mathjax-node-cli。"
+  },
+  "table-short-captions": {
+    "storeName": "在表格目录使用短表题",
+    "description": "可为表格目录单独指定标题，也可以排除某张表。",
+    "requires": "适用于 LaTeX 和 PDF。"
+  },
+  "mhchem": {
+    "storeName": "化学式排版",
+    "description": "排版以 mhchem 语法书写的方程式和同位素。"
+  },
+  "lilypond": {
+    "storeName": "生成乐谱图片",
+    "description": "把笔记中的 LilyPond 乐谱转成图片。",
+    "requires": "电脑须安装 LilyPond。"
+  },
+  "pandoc-quotes": {
+    "storeName": "按语言调整引号",
+    "description": "把直引号替换为文档语言习惯使用的引号。"
+  },
+  "first-line-indent": {
+    "storeName": "正文首行缩进",
+    "description": "为正文段落加上首行缩进，每节的第一段顶格排。"
+  },
+  "pandoc-ext:fonts-and-alignment": {
+    "storeName": "局部调整字体与对齐",
+    "description": "为指定文字或段落单独设置字体、字号、颜色和对齐方式。"
+  },
+  "pandoc-ext:pretty-urls": {
+    "storeName": "简化网址的显示",
+    "description": "去掉裸网址中显示的协议头和末尾斜线。"
+  },
+  "strip-wikilinks": {
+    "storeName": "移除笔记双链",
+    "description": "删除导出内容里的笔记双链及其显示文字，保留嵌入、图片、附件和外部链接。"
+  },
+  "course:table-verbatim": {
+    "storeName": "为表格内代码指定样式",
+    "description": "单独控制单元格中行内代码的字体和字号。",
+    "requires": "Word 参考文档中须有名为 Table Verbatim 的字符样式。"
+  },
+  "course:table-spacing": {
+    "storeName": "增加表格前后间距",
+    "description": "在 Word 表格上下插入较窄的空行。"
+  },
+  "minted": {
+    "storeName": "为 LaTeX 代码块高亮",
+    "description": "用 minted 宏包给 PDF 中的代码块添加语法配色。",
+    "requires": "需要 Pygments，并在 LaTeX 中开启 shell-escape。"
+  },
+  "latex-hyphen": {
+    "storeName": "避免从连字符处断行",
+    "description": "在 LaTeX 中尽量让连字符连接的人名和复合词留在同一行。"
+  },
+  "wordcount": {
+    "storeName": "统计词数",
+    "description": "统计 Pandoc 识别出的正文词数，并显示结果。",
+    "requires": "运行此规则只显示统计结果。"
+  },
+  "spellcheck": {
+    "storeName": "检查拼写",
+    "description": "检查正文拼写，跳过代码、链接和公式。",
+    "requires": "电脑须安装 Aspell。运行此规则只显示检查结果。"
+  }
+}

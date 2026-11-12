@@ -1,6 +1,9 @@
 import { Notice, Platform, type App } from 'obsidian';
 import { For, Match, Show, Switch, createEffect, createMemo, createResource, createSignal, onCleanup } from 'solid-js';
 import { t } from '../../lang/helpers';
+import filterTranslations from '../../lang/filters_zh.json';
+
+const filterText: Record<string, Partial<LuaFilterEntry>> = filterTranslations;
 import { chooseFile, isDesktop, openExternal, vaultRoot } from '../../system/platform';
 import { FileStore } from '../../system/file_store';
 import { stem } from '../../system/paths';
@@ -34,8 +37,8 @@ const CATEGORY_ICON: Record<LuaFilterCategory, string> = {
 
 /** What the file dialog offers, ending in everything: a filter is as often kept under a name of the user's own. */
 const LUA_FILES = [
-  { name: 'Lua filter', extensions: ['lua'] },
-  { name: 'All files', extensions: ['*'] },
+  { name: 'Lua 规则', extensions: ['lua'] },
+  { name: '所有文件', extensions: ['*'] },
 ];
 
 /**
@@ -100,7 +103,7 @@ export default (props: {
       }));
   });
 
-  const allEntries = createMemo(() => [...(catalogue() ?? []), ...orphans()]);
+  const allEntries = createMemo(() => [...(catalogue() ?? []), ...orphans()].map(entry => ({ ...entry, ...filterText[entry.id] })));
 
   /** Whether an entry matches what has been typed. */
   const matchesSearch = (e: LuaFilterEntry) => {

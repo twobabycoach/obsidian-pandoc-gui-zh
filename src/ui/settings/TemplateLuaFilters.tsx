@@ -1,5 +1,8 @@
 import { createMemo } from 'solid-js';
 import { t } from '../../lang/helpers';
+import filterTranslations from '../../lang/filters_zh.json';
+
+const filterText: Record<string, { storeName: string }> = filterTranslations;
 import { hasLuaFilterArg, type InstalledLuaFilter } from '../../filters/lua_filters';
 import { runsInFormat } from '../../pandoc/pandoc_format';
 import CheckGrid from '../components/CheckGrid';
@@ -19,7 +22,7 @@ export default (props: {
       .sort((a, b) => a.storeName.localeCompare(b.storeName))
       .map(filter => ({
         value: filter.fileName,
-        label: filter.storeName,
+        label: filterText[filter.id]?.storeName ?? filter.storeName,
         // The file name is what the flag carries; two filters can share a store name.
         tooltip: filter.fileName,
         checked: hasLuaFilterArg(props.args, filter.fileName),

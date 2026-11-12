@@ -74,22 +74,25 @@ export const reportRun = (plugin: PandocGuiPlugin, report: RunReport): void => {
           el.createSpan({ cls: 'ex-export-error-value', text: value, title: title ?? value });
         });
       }
-      if (report.command && report.showCommand) {
-        root.createDiv({ cls: 'ex-export-error-command', text: t.EXPORT_COMMAND_OUTPUT(report.command) });
-      }
-      if (report.output) {
-        // A wrapper, so the button stays in the corner while the output scrolls.
-        root.createDiv({ cls: 'ex-export-error-output' }, el => {
-          el.createDiv({ cls: 'ex-export-error-detail', text: report.output });
-          el.createDiv({ cls: ['clickable-icon', 'ex-export-error-copy'] }, button => {
-            setIcon(button, 'copy');
-            setTooltip(button, t.REPORT_COPY);
-            button.onclick = () => chooseCopy(button);
-          });
-        });
-      }
       if (report.hint) {
         root.createDiv({ cls: 'ex-export-error-hint', text: report.hint });
+      }
+      if (report.output || (report.command && report.showCommand)) {
+        const details = root.createEl('details', { cls: 'ex-zh-report-details' });
+        details.createEl('summary', { text: '查看转换详情' });
+        if (report.command && report.showCommand) {
+          details.createDiv({ cls: 'ex-export-error-command', text: t.EXPORT_COMMAND_OUTPUT(report.command) });
+        }
+        if (report.output) {
+          details.createDiv({ cls: 'ex-export-error-output' }, el => {
+            el.createDiv({ cls: 'ex-export-error-detail', text: report.output });
+            el.createEl('button', { cls: ['clickable-icon', 'ex-export-error-copy'], attr: { 'aria-label': t.REPORT_COPY } }, button => {
+              setIcon(button, 'copy');
+              setTooltip(button, t.REPORT_COPY);
+              button.onclick = () => chooseCopy(button);
+            });
+          });
+        }
       }
     },
   });

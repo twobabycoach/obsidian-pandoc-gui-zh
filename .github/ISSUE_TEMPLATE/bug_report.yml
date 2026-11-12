@@ -13,7 +13,7 @@ body:
       options:
         - label: I am on the latest version of Pandoc GUI.
           required: true
-        - label: I have searched the existing issues and checked the [user guide](https://github.com/pan4ratte/obsidian-pandoc-gui/blob/main/docs/USER_GUIDE.md).
+        - label: I have searched the existing issues and checked the [user guide](https://github.com/twobabycoach/obsidian-pandoc-gui-zh/blob/main/docs/USER_GUIDE_ZH.md).
           required: true
 
   - type: dropdown

@@ -2888,3 +2888,124 @@
 *[hidden] {
   display: none;
 }
+
+/* Chinese edition's guided import and export. */
+.ex-zh-source {
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+  margin-block: 0 1rem;
+}
+
+.ex-zh-formats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(112px, 100%), 1fr));
+  gap: 8px;
+}
+
+.ex-zh-formats .ex-zh-format {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  min-height: 62px;
+  height: auto;
+  padding: 10px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background: var(--background-secondary);
+  text-align: start;
+  white-space: normal;
+  cursor: pointer;
+}
+
+.ex-zh-formats .ex-zh-format[aria-pressed='true'] {
+  border-color: var(--interactive-accent);
+  background: var(--background-modifier-hover);
+  box-shadow: inset 0 0 0 1px var(--interactive-accent);
+}
+
+.ex-zh-format span,
+.ex-zh-format small {
+  display: block;
+  line-height: 1.5;
+}
+
+.ex-zh-format small {
+  font-size: var(--font-smallest);
+  color: var(--text-muted);
+}
+
+.ex-zh-destination {
+  display: grid;
+  gap: 3px;
+  margin-block: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.ex-zh-destination > span + span,
+.ex-zh-setup p {
+  color: var(--text-muted);
+  font-size: var(--font-small);
+}
+
+.ex-zh-setup {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  margin-block: 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background: var(--background-secondary);
+}
+
+.ex-zh-setup p {
+  margin-block: 4px 0;
+}
+
+.ex-zh-setup p.ex-zh-error {
+  color: var(--text-error);
+}
+
+.ex-zh-pick,
+.ex-zh-setup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ex-zh-pick button,
+.ex-zh-setup-actions button {
+  min-height: 44px;
+}
+
+.ex-zh-format:focus-visible,
+.ex-zh-setup button:focus-visible,
+.ex-zh-pick button:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.ex-zh-settings-start {
+  margin-block-end: 16px;
+}
+
+.ex-zh-settings-start h2 {
+  margin-block: 0 6px;
+}
+
+.ex-zh-settings-start p {
+  color: var(--text-muted);
+  margin-block: 0;
+}
+
+button.ex-zh-technical-link {
+  margin-block-start: 12px;
+}
+
+.ex-zh-report-details > summary {
+  cursor: pointer;
+  color: var(--text-muted);
+}

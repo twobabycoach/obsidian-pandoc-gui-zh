@@ -6,6 +6,7 @@ import type { TodayFormat } from './filters/filter_args';
 import type { EngineMode } from './pandoc/engine';
 import type { StyleMode } from './docx/styles';
 import type { DocumentMetadata } from './convert/document_metadata';
+import { setReferenceDoc, setVariable, variable } from './args/writer_args';
 import { setTocDepth } from './args/toc_args';
 
 // What a template's `${...}` are filled in with. For `/User/aaa/Documents/test.pdf`:
@@ -138,6 +139,8 @@ export interface PandocExportSetting extends CommonExportSetting {
   joinBefore?: string[];
   joinAfter?: string[];
   joinStyles?: StyleMode;
+  /** Use the built-in PDF typesetter and Chinese fonts for this export. */
+  quickPdf?: boolean;
   /** Picked in the export dialog for one export, over the note's and the template's; `[]` joins none. Never saved. */
   joinChosen?: { before?: string[]; after?: string[] };
   /** Title, properties and the like, which the note's own properties override. Kept off the command line: it is prose. */
@@ -159,6 +162,8 @@ export interface ExportChoices {
   /** Table of contents depth; unset keeps the template's. */
   toc?: number;
   join?: PandocExportSetting['joinChosen'];
+  reference?: string;
+  quickPdf?: boolean;
 }
 
 /** `setting` with the dialog's choices applied. A custom template has nothing to apply them to. */
@@ -166,21 +171,36 @@ export function applyExportChoices(setting: ExportSetting, choices?: ExportChoic
   if (setting.type !== 'pandoc' || !choices) {
     return setting;
   }
-  return {
-    ...setting,
-    customArguments: choices.toc === undefined ? setting.customArguments : setTocDepth(setting.customArguments, choices.toc),
-    joinChosen: choices.join,
-  };
+  let args = setting.customArguments;
+  let userArguments = setting.userArguments;
+  if (choices.toc !== undefined) {
+    args = setTocDepth(args, choices.toc);
+  }
+  if (choices.reference !== undefined) {
+    args = setReferenceDoc(args, choices.reference);
+    if (userArguments) {
+      userArguments = setReferenceDoc(userArguments, '');
+    }
+  }
+  if (choices.quickPdf) {
+    const defaults = { mainfont: 'Noto Sans CJK SC', lang: 'zh', papersize: 'a4' };
+    for (const [key, value] of Object.entries(defaults)) {
+      if (!variable(args, key) && !variable(userArguments, key)) {
+        args = setVariable(args, key, value);
+      }
+    }
+  }
+  return { ...setting, customArguments: args, userArguments, joinChosen: choices.join, quickPdf: choices.quickPdf };
 }
 
 export const PRESET_OPTIONS_META: PropertyGridMeta = {
   'textemplate': {
-    title: 'Latex Template',
+    title: 'LaTeX 模板',
     type: 'dropdown',
     options: [
-      { name: 'None', value: null },
-      { name: 'Dissertation', value: 'dissertation.tex' },
-      { name: 'Academic Paper', value: 'neurips.tex' },
+      { name: '无', value: null },
+      { name: '学位论文', value: 'dissertation.tex' },
+      { name: '学术论文', value: 'neurips.tex' },
     ],
   },
 };
@@ -246,6 +266,7 @@ export const DEFAULT_SETTINGS: PandocGuiSettings = {
   items: DEFAULT_ITEMS,
   seededTemplates: DEFAULT_ITEMS.map(o => o.name),
   pandocPath: undefined,
+  showOverwriteConfirmation: true,
   defaultExportDirectoryMode: 'Same',
   openExportedFile: true,
   env: DEFAULT_ENV,

@@ -1,4 +1,4 @@
-import { Notice, Platform, PluginSettingTab, moment } from 'obsidian';
+import { Notice, Platform, PluginSettingTab } from 'obsidian';
 import type { SettingDefinitionItem } from 'obsidian';
 import type { SemVer } from 'semver';
 import type PandocGuiPlugin from '../../main';
@@ -9,6 +9,7 @@ import { createSignal, createRoot, onCleanup, createMemo, createEffect, For, Ind
 import { createStore, produce } from 'solid-js/store';
 import { insert, Dynamic } from 'solid-js/web';
 import { t } from '../../lang/helpers';
+import { formatLabel, templateLabel } from '../../lang/formats';
 
 import pandoc from '../../pandoc/pandoc';
 import { resolveEngine } from '../../pandoc/engine';
@@ -256,17 +257,15 @@ const [commandOpen, setCommandOpen] = createSignal(false);
  * a bibliography by its extension and nothing else, so that list is exactly the one it knows; it reads a reference
  * document by its contents, so the word processors' own template extensions stand beside the documents'.
  */
-const ANY_FILE = { name: 'All files', extensions: ['*'] };
-const BIBLIOGRAPHY_FILES = [
-  { name: 'Bibliography', extensions: ['bib', 'bibtex', 'biblatex', 'json', 'yaml', 'yml', 'ris', 'enl', 'xml'] },
-];
-const CSL_FILES = [{ name: 'Citation style', extensions: ['csl'] }];
-const CSS_FILES = [{ name: 'Stylesheet', extensions: ['css'] }];
-const SYNTAX_FILES = [{ name: 'Syntax definition', extensions: ['xml'] }];
-const IMAGE_FILES = [{ name: 'Image', extensions: ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'] }];
-const FONT_FILES = [{ name: 'Font', extensions: ['otf', 'ttf', 'woff', 'woff2'] }];
-const JOIN_FILES = [{ name: 'Word', extensions: ['docx', 'dotx'] }];
-const WORD_XML_FILES = [{ name: 'Word XML', extensions: ['xml'] }];
+const ANY_FILE = { name: '所有文件', extensions: ['*'] };
+const BIBLIOGRAPHY_FILES = [{ name: '参考文献库', extensions: ['bib', 'bibtex', 'biblatex', 'json', 'yaml', 'yml', 'ris', 'enl', 'xml'] }];
+const CSL_FILES = [{ name: '引文样式', extensions: ['csl'] }];
+const CSS_FILES = [{ name: '网页样式表', extensions: ['css'] }];
+const SYNTAX_FILES = [{ name: '语法定义', extensions: ['xml'] }];
+const IMAGE_FILES = [{ name: '图片', extensions: ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'] }];
+const FONT_FILES = [{ name: '字体', extensions: ['otf', 'ttf', 'woff', 'woff2'] }];
+const JOIN_FILES = [{ name: 'Word 文档', extensions: ['docx', 'dotx'] }];
+const WORD_XML_FILES = [{ name: 'Word XML 片段', extensions: ['xml'] }];
 
 /** What a reference document may be, by writer: the document a word processor writes, and the template it writes one from. */
 const REFERENCE_DOC_FILES: Record<string, string[]> = {
@@ -290,6 +289,8 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
   const [pandocVersion, setPandocVersion] = createSignal<SemVer | null>();
   // Read far more often than written, so the rows stay out of the way until asked for.
   const [editingEnvVars, setEditingEnvVars] = createSignal(false);
+  const [technical, setTechnical] = createSignal(false);
+  const [showCustom, setShowCustom] = createSignal(false);
   // The pickers answer for the folders a variable lists, which is all three of the defaults are. The text is the way
   // in to what they cannot say: a variable of one's own, or a value that is not a path at all.
   const [envVarsAsText, setEnvVarsAsText] = createSignal(false);
@@ -351,6 +352,7 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
   // Two settings remember a template by name — the editor's row and the last export type.
   // Both follow a rename and are let go of on delete, so neither points at nothing.
   const followTemplateRename = (previous: string | undefined, name: string) => {
+    setShowCustom(false);
     setSettings('lastEditName', name);
     if (settings.lastExportType === previous) {
       setSettings('lastExportType', name);
@@ -382,11 +384,13 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
 
   /** Whether the plugin gave the template this name, rather than the user typing it. */
   const isGeneratedName = (name: string, preset: string) =>
-    name === preset || (name.startsWith(`${preset} `) && /^\d+$/.test(name.substring(preset.length + 1)));
+    name === preset || name === formatLabel(preset) || (name.startsWith(`${preset} `) && /^\d+$/.test(name.substring(preset.length + 1)));
 
-  const outputOptions = Object.keys(export_templates)
-    .map(k => ({ name: k, value: k }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const outputOptions = () =>
+    Object.keys(export_templates)
+      .filter(key => key !== 'Custom' || showCustom() || currentOutput() === key)
+      .map(key => ({ name: formatLabel(key), value: key }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
 
   const [modal, setModal] = createSignal<() => JSX.Element>();
 
@@ -419,7 +423,8 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
   };
 
   const addCommandTemplate = () => {
-    const key = Object.keys(export_templates)[0];
+    setShowCustom(false);
+    const key = 'Word (.docx)';
     const template = clone(export_templates[key]);
     template.preset = key;
     template.name = uniqueTemplateName(template.name);
@@ -449,9 +454,9 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
       <Modal app={app} title={t.TEMPLATE_EDITOR_TITLE} classList={{ 'ex-template-modal': true }} onClose={() => setModal(undefined)}>
         {/* Name and output format share a row: they are one answer. */}
         <Setting name={t.TEMPLATE_NAME} class="ex-template-modal-name">
-          <Text value={currentEditCommandTemplate()?.name ?? ''} onChange={renameCurrentCommandTemplate} />
+          <Text value={templateLabel(currentEditCommandTemplate()?.name ?? '', currentOutput())} onChange={renameCurrentCommandTemplate} />
           <DropDown
-            options={outputOptions}
+            options={outputOptions()}
             selected={currentOutput()}
             tooltip={t.TEMPLATE_OUTPUT}
             autofocus={false}
@@ -467,6 +472,12 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
             <CustomCommandTempateEditBlock />
           </Match>
         </Switch>
+
+        <Show when={!showCustom() && currentOutput() !== 'Custom' && !isMobileUi()}>
+          <button class="ex-zh-technical-link" type="button" onClick={() => setShowCustom(true)}>
+            显示自定义命令格式
+          </button>
+        </Show>
 
         {/* Nothing left to save — but the button is the way out, and a form this long expects one. */}
         <div class="modal-button-container">
@@ -829,7 +840,7 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
 
     // Each form is shown as today's date written in it — clearer than the format's name.
     const todayOptions = createMemo(() => {
-      const written = today(moment.locale());
+      const written = today('zh-CN');
       return [{ name: t.TODAY_NONE, value: '' }, ...TODAY_FORMATS.map(format => ({ name: written[format], value: format }))];
     });
 
@@ -1750,64 +1761,37 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
 
   return (
     <>
-      {/* A card to each pandoc, then the pages to read, then what neither pandoc's card has the room to say. */}
-      <div class="ex-dashboard">
-        <Show
-          when={engine() === 'native'}
-          fallback={
-            // With the wasm build alone, its card and the three pages to read make a square of four.
-            <div class="ex-dashboard-row is-wasm-only">
-              {wasmPanel}
-              {links}
-            </div>
-          }
-        >
-          <div class="ex-dashboard-row">
-            <PandocDashboard version={pandocVersion()} markdownLinks={app.vault.config.useMarkdownLinks} onNotices={setNativeNotices} />
-            {wasmPanel}
-          </div>
-          <div class="ex-dashboard-row ex-dashboard-links">{links}</div>
-        </Show>
-
-        <PandocNotices notices={panelNotices()} />
+      <div class="ex-zh-settings-start">
+        <h2>笔记导出助手</h2>
+        <p>打开一篇笔记，点左侧「导出笔记」，即可生成 Word、PDF 或网页。</p>
       </div>
+      {/* A card to each pandoc, then the pages to read, then what neither pandoc's card has the room to say. */}
+      <Section name={t.PANDOC_DASHBOARD} description="查看安装状态、字体和使用指南">
+        <div class="ex-dashboard">
+          <Show
+            when={engine() === 'native'}
+            fallback={
+              // With the wasm build alone, its card and the three pages to read make a square of four.
+              <div class="ex-dashboard-row is-wasm-only">
+                {wasmPanel}
+                {links}
+              </div>
+            }
+          >
+            <div class="ex-dashboard-row">
+              <PandocDashboard version={pandocVersion()} markdownLinks={app.vault.config.useMarkdownLinks} onNotices={setNativeNotices} />
+              {wasmPanel}
+            </div>
+            <div class="ex-dashboard-row ex-dashboard-links">{links}</div>
+          </Show>
+
+          <PandocNotices notices={panelNotices()} />
+        </div>
+      </Section>
 
       <Setting name={t.SECTION_DEFAULTS} heading={true} />
 
       <div class="ex-settings-card">
-        {/* Which pandoc converts, and where the installed one is: what every row below is answered under.
-            A phone has no installed program to point at, so that row belongs to the desktop. */}
-        <Show when={engine() === 'native'}>
-          {/* Nothing here means the export runs a bare `pandoc`, which is the system's PATH answering rather than a
-              search of the plugin's own — so the row claims it was found only once the binary has actually answered. */}
-          <Setting
-            name={t.PANDOC_PATH}
-            description={
-              getPlatformValue(settings.pandocPath) ||
-              (pandocVersion() ? t.PANDOC_PATH_PLACEHOLDER : pandocVersion() === null ? t.PANDOC_PATH_NOT_FOUND : '')
-            }
-          >
-            <ExtraButton icon="folder" tooltip={t.CHOOSE_FILE} onClick={() => void choosePandocPath()} />
-            {/* The dialog cannot pick "nothing", so clearing needs its own control. */}
-            <Show when={getPlatformValue(settings.pandocPath)}>
-              <ExtraButton
-                icon="rotate-ccw"
-                tooltip={t.PANDOC_PATH_RESET}
-                onClick={() => setSettings('pandocPath', v => setPlatformValue(v, ''))}
-              />
-            </Show>
-          </Setting>
-        </Show>
-
-        {/* Asked whether or not the build is installed: it is the answer that says what to install for. The question
-            is only ever about this computer — a phone runs the wasm build whichever way it is set, and is not asked
-            at all, an answer there being a claim that there is an installed pandoc to choose instead. */}
-        <Show when={!isMobileUi()}>
-          <Setting name={t.WASM_ENGINE} description={t.WASM_ENGINE_DESC}>
-            <Toggle checked={settings.engineMode === 'wasm'} onChange={on => setSettings('engineMode', on ? 'wasm' : 'auto')} />
-          </Setting>
-        </Show>
-
         <Setting name={t.SETTING_EXPORT_DESTINATION}>
           <DropDown
             options={[
@@ -1857,51 +1841,86 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
           </Setting>
         </Show>
 
-        {/* The environment is what a program is started with, and the wasm build is not started. */}
-        <Show when={engine() === 'native'}>
-          <Setting name={t.SETTING_ENV_VARS} description={t.SETTING_ENV_VARS_DESC}>
-            <ExtraButton icon="pencil" tooltip={t.ACTION_EDIT} onClick={() => setEditingEnvVars(v => !v)} />
-          </Setting>
-        </Show>
-
-        <Collapsible when={editingEnvVars() && engine() === 'native'}>
-          <Setting class="ex-nameless-setting ex-env-panel">
-            <Show when={envVarsAsText()} fallback={<EnvVars env={envVars()} onChange={setEnvVars} />}>
-              <TextArea
-                class="ex-env-vars"
-                autoSize={true}
-                visible={editingEnvVars() && envVarsAsText()}
-                value={envVarsText()}
-                onChange={setEnvVarsText}
-              />
-            </Show>
-
-            {/* Everything the panel does that is not editing what is already in it: a folder for each variable,
-                and the way over to the text. Nothing to add to while the text is showing — it adds by being typed. */}
-            <div class="ex-env-actions">
-              <Show when={!envVarsAsText()}>
-                <Index each={Object.keys(envVars())}>
-                  {name => (
-                    // A plus and the variable's name: what the button does is the icon's to say, and the row is
-                    // several of these side by side, where the word "add" three times over is three times nothing.
-                    <Button
-                      class="ex-env-action"
-                      tooltip={t.ENV_ADD_FOLDER(name())}
-                      onClick={() => void addEnvFolder(envVars(), name(), setEnvVars)}
-                    >
-                      <Icon name="plus" />
-                      {name()}
-                    </Button>
-                  )}
-                </Index>
+        <Section name="转换组件的高级设置" open={technical()} onToggle={setTechnical}>
+          {/* Which pandoc converts, and where the installed one is: what every row below is answered under.
+            A phone has no installed program to point at, so that row belongs to the desktop. */}
+          <Show when={engine() === 'native'}>
+            {/* Nothing here means the export runs a bare `pandoc`, which is the system's PATH answering rather than a
+              search of the plugin's own — so the row claims it was found only once the binary has actually answered. */}
+            <Setting
+              name={t.PANDOC_PATH}
+              description={
+                getPlatformValue(settings.pandocPath) ||
+                (pandocVersion() ? t.PANDOC_PATH_PLACEHOLDER : pandocVersion() === null ? t.PANDOC_PATH_NOT_FOUND : '')
+              }
+            >
+              <ExtraButton icon="folder" tooltip={t.CHOOSE_FILE} onClick={() => void choosePandocPath()} />
+              {/* The dialog cannot pick "nothing", so clearing needs its own control. */}
+              <Show when={getPlatformValue(settings.pandocPath)}>
+                <ExtraButton
+                  icon="rotate-ccw"
+                  tooltip={t.PANDOC_PATH_RESET}
+                  onClick={() => setSettings('pandocPath', v => setPlatformValue(v, ''))}
+                />
               </Show>
-              <Button class="ex-env-action" onClick={() => setEnvVarsAsText(v => !v)}>
-                <Icon name="pencil" />
-                {envVarsAsText() ? t.ENV_EDIT_AS_FOLDERS : t.ENV_EDIT_AS_TEXT}
-              </Button>
-            </div>
-          </Setting>
-        </Collapsible>
+            </Setting>
+          </Show>
+
+          {/* Asked whether or not the build is installed: it is the answer that says what to install for. The question
+            is only ever about this computer — a phone runs the wasm build whichever way it is set, and is not asked
+            at all, an answer there being a claim that there is an installed pandoc to choose instead. */}
+          <Show when={!isMobileUi()}>
+            <Setting name={t.WASM_ENGINE} description={t.WASM_ENGINE_DESC}>
+              <Toggle checked={settings.engineMode === 'wasm'} onChange={on => setSettings('engineMode', on ? 'wasm' : 'auto')} />
+            </Setting>
+          </Show>
+
+          {/* The environment is what a program is started with, and the wasm build is not started. */}
+          <Show when={engine() === 'native'}>
+            <Setting name={t.SETTING_ENV_VARS} description={t.SETTING_ENV_VARS_DESC}>
+              <ExtraButton icon="pencil" tooltip={t.ACTION_EDIT} onClick={() => setEditingEnvVars(v => !v)} />
+            </Setting>
+          </Show>
+
+          <Collapsible when={editingEnvVars() && engine() === 'native'}>
+            <Setting class="ex-nameless-setting ex-env-panel">
+              <Show when={envVarsAsText()} fallback={<EnvVars env={envVars()} onChange={setEnvVars} />}>
+                <TextArea
+                  class="ex-env-vars"
+                  autoSize={true}
+                  visible={editingEnvVars() && envVarsAsText()}
+                  value={envVarsText()}
+                  onChange={setEnvVarsText}
+                />
+              </Show>
+
+              {/* Everything the panel does that is not editing what is already in it: a folder for each variable,
+                and the way over to the text. Nothing to add to while the text is showing — it adds by being typed. */}
+              <div class="ex-env-actions">
+                <Show when={!envVarsAsText()}>
+                  <Index each={Object.keys(envVars())}>
+                    {name => (
+                      // A plus and the variable's name: what the button does is the icon's to say, and the row is
+                      // several of these side by side, where the word "add" three times over is three times nothing.
+                      <Button
+                        class="ex-env-action"
+                        tooltip={t.ENV_ADD_FOLDER(name())}
+                        onClick={() => void addEnvFolder(envVars(), name(), setEnvVars)}
+                      >
+                        <Icon name="plus" />
+                        {name()}
+                      </Button>
+                    )}
+                  </Index>
+                </Show>
+                <Button class="ex-env-action" onClick={() => setEnvVarsAsText(v => !v)}>
+                  <Icon name="pencil" />
+                  {envVarsAsText() ? t.ENV_EDIT_AS_FOLDERS : t.ENV_EDIT_AS_TEXT}
+                </Button>
+              </div>
+            </Setting>
+          </Collapsible>
+        </Section>
       </div>
 
       <Setting name={t.SECTION_TEMPLATES} heading={true} />

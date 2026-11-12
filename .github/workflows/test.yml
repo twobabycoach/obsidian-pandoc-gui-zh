@@ -42,5 +42,9 @@ jobs:
         run: npm run docs:catalogue:check
       - name: Reference documents are generated, not hand-edited
         run: npm run gen:references:check
+      - name: Check types and build
+        run: |
+          npm run typecheck
+          npm run build
       - name: Test
         run: npm test

@@ -1,7 +1,7 @@
 {
   "name": "obsidian-pandoc-gui",
-  "version": "3.1.2",
-  "description": "Export and import notes via Pandoc with a modern GUI on both desktop and mobile. Create templates for Word, PDF, LaTeX, HTML, EPUB, and many other formats, and install dozens of Lua filters from the store.",
+  "version": "3.1.2-zh.1",
+  "description": "Obsidian 笔记导出助手（Pandoc GUI 简体中文版）",
   "main": "main.js",
   "scripts": {
     "dev": "vite build -w -m development",
@@ -22,7 +22,7 @@
   "keywords": [],
   "author": "pan4ratte",
   "license": "MIT",
-  "repository": "https://github.com/pan4ratte/obsidian-pandoc-gui",
+  "repository": "https://github.com/twobabycoach/obsidian-pandoc-gui-zh",
   "type": "module",
   "devDependencies": {
     "@eslint/js": "^10.0.1",

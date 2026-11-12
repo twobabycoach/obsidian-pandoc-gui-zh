@@ -5,7 +5,7 @@ import { exec } from '../system/utils';
 import semverParse from 'semver/functions/parse';
 import type { SemVer } from 'semver';
 
-export const normalizePandocPath = (path?: string) => (path?.includes(' ') ? `"${path}"` : `${path ?? 'pandoc'}`);
+export const normalizePandocPath = (path?: string) => (path?.includes(' ') ? `"${path}"` : `${path || 'pandoc'}`);
 
 /** Pandoc versions are not semver: they carry two components (`2.9`) or four (`3.1.11.1`). */
 export function parsePandocVersion(version: string) {

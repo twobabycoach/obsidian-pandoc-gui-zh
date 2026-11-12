@@ -1,10 +1,11 @@
 import { Variables, ExportSetting, extractDefaultExtension as extractExtension, createEnv, today } from '../settings';
 import { MessageBox, confirm } from '../ui/message_box';
 import { reportRun } from '../ui/report_box';
-import { Platform, TFile, getLinkpath, moment } from 'obsidian';
+import { Platform, TFile, getLinkpath } from 'obsidian';
 import type { SemVer } from 'semver';
 import { exec, renderTemplate, getPlatformValue, trimQuotes } from '../system/utils';
 import { t } from '../lang/helpers';
+import { templateLabel } from '../lang/formats';
 import { PandocProgress } from '../ui/progress';
 import { describeExportFailure } from './export_error';
 import type PandocGuiPlugin from '../main';
@@ -19,7 +20,17 @@ import { FileStore } from '../system/file_store';
 import { download } from '../system/download';
 import { basename, dirname, extname, normalize, resolve, stem } from '../system/paths';
 import { collectJoins, joinExport } from './joined_docs';
-import { PATH_SEPARATOR, chooseSavePath, fullPath, isDesktop, isMobile, openFile, showInFolder, tempFolder, vaultRoot } from '../system/platform';
+import {
+  PATH_SEPARATOR,
+  chooseSavePath,
+  fullPath,
+  isDesktop,
+  isMobile,
+  openFile,
+  showInFolder,
+  tempFolder,
+  vaultRoot,
+} from '../system/platform';
 import { type DrawingFormat, isDrawing, renderDrawing } from './excalidraw';
 import { type QueryAnswer, collectQueries, renderQueries } from './dataview';
 import { outputFormat, readsInlinedFonts, takesSvg, writesLatex } from '../pandoc/pandoc_format';
@@ -162,7 +173,8 @@ export async function exportNote(
     return;
   }
   // The PDF is typst's half of the work, and it is installed on its own — a vault that exports no PDF never fetches it.
-  const needsTypst = engine === 'wasm' && writesTypstPdf(setting);
+  const useBundledTypst = setting.type === 'pandoc' && setting.quickPdf && writesTypstPdf(setting);
+  const needsTypst = (engine === 'wasm' || useBundledTypst) && writesTypstPdf(setting);
   if (needsTypst && !(await plugin.typst.isInstalled())) {
     refuse(t.TYPST_NOT_INSTALLED);
     return;
@@ -286,8 +298,7 @@ export async function exportNote(
     vaultDir,
     metadata: frontMatter,
     embedDirs,
-    // In Obsidian's language rather than the machine's.
-    today: today(moment.locale()),
+    today: today('zh-CN'),
     // Always an object: reading `${options.x}` off nothing would throw while building the command.
     options: options ?? {},
     fromFormat: obsidianConfig.useMarkdownLinks ? 'markdown' : 'markdown+wikilinks_title_after_pipe',
@@ -313,6 +324,7 @@ export async function exportNote(
         : undefined;
 
     if (!chosen) {
+      onFailure?.();
       return;
     }
 
@@ -521,29 +533,39 @@ export async function exportNote(
     } else {
       progress.running(variables.outputFileFullName);
       const run = (command: string) => exec(command, { cwd: variables.currentDir, env });
+      const renderBundledPdf = async () => {
+        progress.starting();
+        const typst = await plugin.typst.load();
+        progress.running(variables.outputFileFullName);
+        return await typesetTypstPdf({
+          command: cmd,
+          run,
+          // Where the export told pandoc to look for what the note names, in the order it told it.
+          searchPaths: [
+            variables.currentDir,
+            variables.attachmentFolderPath,
+            variables.vaultDir,
+            ...variables.embedDirs.split(PATH_SEPARATOR()),
+          ].filter(Boolean),
+          outputPath: actualOutputPath,
+          typst,
+          files,
+        });
+      };
       try {
-        const { stderr } = await run(cmd);
-        warnings = stderr.trim();
+        if (useBundledTypst) {
+          warnings = await renderBundledPdf();
+        } else {
+          const { stderr } = await run(cmd);
+          warnings = stderr.trim();
+        }
       } catch (err) {
         // The machine has no typst to set the PDF with, and the plugin has one. Pandoc has already done its half of
         // the work — it is asked for the source instead, and the wasm build sets it. Anything else fails as it did.
         if (!(writesTypstPdf(setting) && describeExportFailure(err, cmd).hint === 'typstEngine' && (await plugin.typst.isInstalled()))) {
           throw err;
         }
-        progress.starting();
-        const typst = await plugin.typst.load();
-        progress.running(variables.outputFileFullName);
-        warnings = await typesetTypstPdf({
-          command: cmd,
-          run,
-          // Where the export told pandoc to look for what the note names, in the order it told it.
-          searchPaths: [variables.currentDir, variables.attachmentFolderPath, ...variables.embedDirs.split(PATH_SEPARATOR())].filter(
-            Boolean
-          ),
-          outputPath: actualOutputPath,
-          typst,
-          files,
-        });
+        warnings = await renderBundledPdf();
       }
     }
     if (joins) {
@@ -581,7 +603,7 @@ export async function exportNote(
       reportRun(plugin, {
         title: warnings ? t.WARNINGS_TITLE : t.NOTICE_EXPORT_SUCCESS(variables.outputFileFullName),
         facts: [
-          { label: t.ERROR_TEMPLATE, value: setting.name },
+          { label: t.ERROR_TEMPLATE, value: templateLabel(setting.name, setting.preset) },
           { label: t.ERROR_FILE, value: variables.outputFileFullName, title: variables.outputPath },
         ],
         command: cmd,
@@ -602,7 +624,7 @@ export async function exportNote(
     reportRun(plugin, {
       title: t.ERROR_TITLE,
       facts: [
-        { label: t.ERROR_TEMPLATE, value: setting.name },
+        { label: t.ERROR_TEMPLATE, value: templateLabel(setting.name, setting.preset) },
         { label: t.ERROR_FILE, value: variables.outputFileFullName, title: variables.outputPath },
       ],
       command: cmd,

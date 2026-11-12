@@ -18,6 +18,8 @@ const FONT_RELEASE = 'v0.13.1';
 const WASM_URL = `https://cdn.jsdelivr.net/npm/@myriaddreamin/typst-ts-web-compiler@${TYPST_VERSION}/pkg/typst_ts_web_compiler_bg.wasm`;
 /** Where a pack's own repository is read from — the rest of the path is the pack's, see `FONT_PACKS`. */
 const FONT_URL = 'https://cdn.jsdelivr.net/gh/typst';
+const CHINESE_FONT_URL = 'https://raw.githubusercontent.com/notofonts/noto-cjk/Sans2.004/Sans/OTF/SimplifiedChinese';
+const CHINESE_FONTS = ['NotoSansCJKsc-Regular.otf', 'NotoSansCJKsc-Bold.otf'];
 
 export const TYPST_FILE = 'typst.wasm';
 /** Where the fonts sit beside the binary. */
@@ -40,8 +42,7 @@ export interface FontPack {
  * DejaVu for code. Between them they cover Latin and Cyrillic; a note in another script needs a font of its own, which
  * is what the vault's font folder is for.
  *
- * There is no pack for CJK: the one in typst's own assets is a 5,000-glyph subset, and a font that silently drops
- * characters is worse than none. Emoji are a different matter — that one is the whole font.
+ * The guided PDF export installs the full simplified-Chinese Noto faces separately.
  */
 export const FONT_PACKS: Record<FontPackId, FontPack> = {
   base: {
@@ -208,6 +209,31 @@ export class TypstWasmManager {
     this.forget();
   }
 
+  async hasChineseFonts(): Promise<boolean> {
+    const { adapter } = this.plugin.app.vault;
+    const installed = await Promise.all(CHINESE_FONTS.map(font => adapter.exists(`${this.fontDirectory}/${font}`)));
+    return installed.every(Boolean);
+  }
+
+  async installChineseFonts(): Promise<void> {
+    const { adapter } = this.plugin.app.vault;
+    await adapter.mkdir(this.fontDirectory);
+    for (const font of CHINESE_FONTS) {
+      const path = `${this.fontDirectory}/${font}`;
+      if (await adapter.exists(path)) {
+        continue;
+      }
+      const { arrayBuffer } = await requestUrl({ url: `${CHINESE_FONT_URL}/${font}` });
+      if (arrayBuffer.byteLength < 1_000_000 || new DataView(arrayBuffer).getUint32(0) !== 0x4f54544f) {
+        throw new Error('下载的中文字体文件无效。');
+      }
+      const temporary = `${path}.download`;
+      await adapter.writeBinary(temporary, arrayBuffer);
+      await adapter.rename(temporary, path);
+    }
+    this.forget();
+  }
+
   async removeFonts(id: FontPackId): Promise<void> {
     const { adapter } = this.plugin.app.vault;
     for (const font of FONT_PACKS[id].files) {
@@ -229,6 +255,12 @@ export class TypstWasmManager {
     const { adapter } = this.plugin.app.vault;
     if (await adapter.exists(this.filePath)) {
       await adapter.remove(this.filePath);
+    }
+    for (const font of CHINESE_FONTS) {
+      const path = `${this.fontDirectory}/${font}`;
+      if (await adapter.exists(path)) {
+        await adapter.remove(path);
+      }
     }
     for (const id of Object.keys(FONT_PACKS) as FontPackId[]) {
       await this.removeFonts(id);

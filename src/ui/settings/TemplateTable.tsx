@@ -1,5 +1,6 @@
 import { For, Show, createMemo } from 'solid-js';
 import { t } from '../../lang/helpers';
+import { templateLabel } from '../../lang/formats';
 import { extractDefaultExtension, type ExportSetting } from '../../settings';
 import { droppedBy, unsupportedBy, type Engine } from '../../pandoc/engine';
 import { isMobileUi, isPhoneUi } from '../../system/platform';
@@ -12,15 +13,15 @@ const OUTPUT_FORMATS: Record<string, string> = {
   '.bib': 'BibTeX',
   '.docx': 'Word',
   '.epub': 'EPUB',
-  '.html': 'HTML',
+  '.html': '网页',
   '.md': 'Markdown',
   '.mediawiki': 'MediaWiki',
-  '.odt': 'OpenDocument',
+  '.odt': '开放文档',
   '.opml': 'OPML',
   '.pdf': 'PDF',
   '.pptx': 'PowerPoint',
   '.rst': 'reStructuredText',
-  '.rtf': 'Rich Text',
+  '.rtf': '富文本',
   '.tex': 'LaTeX',
   '.textile': 'Textile',
   '.typ': 'Typst',
@@ -79,11 +80,17 @@ export default (props: {
       props.templates
         .map(item => ({
           name: item.name ?? '',
+          label: templateLabel(item.name, item.preset),
           output: describeOutput(extractDefaultExtension(item)),
           warning: shortfall(item, engine),
         }))
         // Name breaks a tie on output, so the order never depends on settings-file position.
-        .sort((a, b) => direction * (a[key].localeCompare(b[key]) || a.name.localeCompare(b.name)))
+        .sort(
+          (a, b) =>
+            direction *
+            (a[key === 'name' ? 'label' : 'output'].localeCompare(b[key === 'name' ? 'label' : 'output'], 'zh-CN') ||
+              a.name.localeCompare(b.name))
+        )
     );
   });
 
@@ -125,7 +132,7 @@ export default (props: {
               <tr classList={{ 'is-tappable': tapToEdit }} onClick={tapToEdit ? () => props.onEdit?.(row.name) : undefined}>
                 <td class="ex-template-table-name">
                   <span class="ex-template-table-label">
-                    <span>{row.name}</span>
+                    <span>{row.label}</span>
                     <Show when={row.warning}>
                       <Icon class="ex-template-table-warning" name="alert-triangle" tooltip={row.warning} />
                     </Show>
