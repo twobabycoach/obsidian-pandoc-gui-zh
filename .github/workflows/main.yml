@@ -102,7 +102,7 @@ jobs:
             pandoc-gui-zh.zip
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.check.outputs.version }}
           name: 笔记导出助手 ${{ needs.check.outputs.version }}
