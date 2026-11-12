@@ -93,7 +93,7 @@ jobs:
           (cd release && zip -r ../pandoc-gui-zh.zip pandoc-gui-zh 安装说明.md)
 
       - name: Attest plugin files
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
             main.js
