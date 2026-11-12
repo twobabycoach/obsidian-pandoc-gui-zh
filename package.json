@@ -29,7 +29,7 @@
     "@types/jsdom": "^30.0.0",
     "@types/node": "^24.10.1",
     "@types/semver": "^7.8.0",
-    "eslint": "^10.8.0",
+    "eslint": "^10.14.0",
     "eslint-plugin-obsidianmd": "^0.4.1",
     "globals": "^17.9.0",
     "jsdom": "^29.1.1",
